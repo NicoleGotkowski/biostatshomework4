@@ -1,0 +1,206 @@
+---
+title: "Homework4NicoleGotkowski"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r cars}
+summary(cars)
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+
+```{r}
+Question#2
+#I believe that the most influential variables will be gender, parch, age, class and residence. "Women and children first" for taking life boats probably resulted in these passengers to have a higher survival rate, as well, passengers with more children were most likely prioritized. Ticket fare and class probably also had an influence due to the rich being favoured perhaps due to paying off crew members or perceived levels of importance. Destination could have influenced the ability of a passenger to communicate, i.e. passengers from Sweden may have had more difficulty communicating assuming there home destination influences there level of fluency in english. 
+```
+
+```{r}
+#Question##3
+my.data<-read.csv(file.choose())
+View(my.data)
+library(vcd)
+```
+
+```{r}
+#Gender and Survival
+data.frame(my.data)
+mosaic(survived~Gender, data=my.data)
+```
+
+
+```{r}
+#Age and suvrival
+library(popbio)
+my.data.agesurvival<-na.omit(data.frame("age"=my.data$age,"survived"=my.data$survived))
+mosaic(survived~age, data=my.data.agesurvival)
+logi.hist.plot(my.data.agesurvival$age,my.data.agesurvival$survived,boxp=FALSE,type="hist",col="gray", xlabel="Age")
+```
+
+
+```{r}
+#Fare and survival
+library(popbio)
+data.frame(my.data)
+my.data.parch<-na.omit(data.frame("parch"=my.data$parch,"survived"=my.data$survived))
+logi.hist.plot(my.data.parch$parch, my.data.parch$survived,boxp=FALSE,type="hist",col="gray", xlabel="parch")
+```
+
+```{r}
+#Residence and survival
+library(vcd)
+data.frame(my.data)
+mosaic(Residence~survived,data=my.data)
+```
+
+```{r}
+#Class and survival
+library(vcd)
+data.frame(my.data)
+mosaic(pclass~survived,data=my.data)
+```
+
+```{r}
+#Question#4
+#Automatic Seletion
+library(bestglm)
+my.variables=data.frame("age"=my.data$age,"fare"=my.data$fare,"Parents.children"=my.data$parch,"Gender"=my.data$Gender,"Class"=my.data$pclass,"Residence"=my.data$Residence,"survival"=my.data$survived)
+my.variables.nona=na.omit(my.variables)  #get rid of observations with NA
+bestglm(my.variables.nona,IC="AIC",family=binomial)
+
+```
+```{r}
+#Therefore age, gender, class and residence are the nest predictor variables
+```
+
+
+```{r}
+#Question#5
+library(bestglm)
+model1<-glm(survival~age+fare+Parents.children+Gender+Class+Residence, data=my.variables.nona)
+summary.lm(model1)
+```
+```{r}
+#The best variables to use in the model are age, class, residence and gender. 
+```
+
+```{r}
+#Question6
+univariate.age=glm(survived~age, data=my.data, family=binomial(link="logit"))
+summary(univariate.age)
+univariate.fare=glm(survived~fare, data=my.data, family=binomial(link="logit"))
+summary(univariate.fare)
+univariate.Gender=glm(survived~Gender, data=my.data, family=binomial(link="logit"))
+summary(univariate.Gender)
+univariate.parch=glm(survived~parch, data=my.data, family=binomial(link="logit"))
+summary(univariate.parch)
+univariate.residence=glm(survived~Residence, data=my.data, family=binomial(link="logit"))
+summary(univariate.residence)
+#age is significant, fare is significant, Gender is significant, parch is significant and residence is significant. 
+```
+
+
+```{r}
+
+```
+
+```{r}
+#Question7
+#Yes, purposeful and automatic created different results. In automatic, Gender was not significant however it was in purposeful.
+
+```
+
+```{r}
+#Question8
+library(effects)
+plot(allEffects(model1))
+#survival decreased with age, parents to children ratio increased with amunt of children, survival decreased with class, and survival increased with fare. These all are what I initially predicted.  
+```
+```{r}
+#Question9: note you are looking to make sure there is a linear relationship (fitted green line) and to examine plots to. see if there are any differences in the variability of residuals as the value for each predictor variable increases.
+library(car)
+residualPlots(model1)
+```
+
+```{r}
+#check for studentized residuals with a Bonferonni p<0.05
+outlierTest(model1)
+```
+```{r fig.height=8}
+#Test for leverage. Look at hat values plot that indicate leverage
+#Note that id.n=3 means that it will pick out the three values furthest from the average
+influenceIndexPlot(model1, id.n=3)
+#1240, 199 and 711 seem to be influential variables.
+```
+```{r fig.width=10,fig.height=10}
+influenceIndexPlot(model1, id.n=15)
+```
+
+
+```{r fig.width=10,fig.height=10}
+#test for influential observations. If removal of an observation causes substantial change in the estimates of coefficient, it is called influential observation. Influence can be thought of as the product of leverage and outlier (e.g., it has high hat value and response value is unusual conditional on covariate pattern)
+influencePlot(model1)
+
+```
+```{r}
+#1240, 199 and 711 have high hat values - thus they are significantly influencing the model
+```
+
+
+```{r}
+#Examine relationship between predictors. Is there any multicollinearity?
+#The general rule of thumb is that VIFs exceeding 4 warrant further investigation, while VIFs exceeding 10 
+#are signs of serious multicollinearity requiring correction.
+vif(model1)
+```
+
+```{r}
+#Question10
+#Since the VIF <5, the variables are not correlated, therefore there is no multicollinearity, and therefore no concern.  
+```
+
+
+```{r}
+#Question11
+library(caret)
+install.packages('e1071', dependencies=TRUE)
+ctrl <- trainControl(method = "repeatedcv", number = 10, savePredictions = TRUE)
+my.variables.nona$survival=as.factor(my.variables.nona$survival)
+train(survival ~Gender+age+Class+Residence+Parents.children,data=my.variables.nona, method="glm", family=binomial(link='logit'),
+                 trControl = ctrl, tuneLength = 5)
+
+```
+
+```{r}
+#Question 12
+#Based on the k-fold, the model predicted actual values 78.7% accurately. Therefore, the model was better than randomly selected data, meaning it was a good model. 
+```
+
+```{r}
+#Question13
+predictions<-predict(model1, newdata=my.variables.nona,type="response")
+confusionMatrix(data=as.factor(as.numeric(predictions>0.5)),reference=my.variables.nona$survival)
+#The accuracy of this model is 79%
+```
+```{r}
+#Question14
+#They are different because they are technically testing for different things. A K-fold is testing how well the model can predict data, and the confusion matrix tests how many false positives/negatives. 
+```
+
